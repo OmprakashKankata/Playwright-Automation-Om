@@ -6,19 +6,36 @@ on:
     branches: [ main, master ]
 jobs:
   test:
-    timeout-minutes: 60
+    # Changed from 60 to 15 to prevent long freezes if a test gets stuck
+    timeout-minutes: 15 
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+
     - uses: actions/setup-node@v4
       with:
         node-version: lts/*
+        cache: 'npm' # Automatically caches npm packages
+
     - name: Install dependencies
       run: npm ci
+
+    # 1. Checks if the browsers are already saved from a previous run
+    - name: Cache Playwright Browsers
+      uses: actions/cache@v4
+      id: playwright-cache
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+
+    # 2. Skips installation entirely if a cache match is found
     - name: Install Playwright Browsers
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
       run: npx playwright install --with-deps
+
     - name: Run Playwright tests
       run: npx playwright test
+
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:
