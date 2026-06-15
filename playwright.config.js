@@ -1,5 +1,6 @@
 // @ts-check
 const { defineConfig, devices } = require('@playwright/test');
+
 /**
  * @see https://playwright.dev/docs/test-configuration
  */
@@ -18,20 +19,23 @@ module.exports = defineConfig({
     baseURL: 'https://www.amazon.in',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    // Real user agent to avoid basic bot detection
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   },
 
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          args: [
+            '--disable-blink-features=AutomationControlled',  // Hides automation flags
+            '--no-sandbox',
+            '--disable-infobars',
+          ],
+        },
+      },
     },
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
   ],
 });
