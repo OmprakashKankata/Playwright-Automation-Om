@@ -7,15 +7,24 @@ on:
 jobs:
   test:
     timeout-minutes: 30
-    # Use Ubuntu 22.04 — fully compatible with Playwright dependencies
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
 
     - uses: actions/setup-node@v4
       with:
-        node-version: lts/*
+        # Node 22 works perfectly with Playwright 1.60.0+
+        node-version: 22
         cache: 'npm'
+
+    - name: Free Disk Space
+      # Clears temporary runner data to ensure smooth unzipping
+      run: |
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /opt/ghc
+        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
     - name: Install dependencies
       run: npm ci
@@ -27,14 +36,14 @@ jobs:
         path: ~/.cache/ms-playwright
         key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
 
-    # Split install & deps to avoid hanging on --with-deps
+    - name: Install system dependencies
+      # CRITICAL: Always run this. Ubuntu needs these libraries even on a cache hit.
+      run: npx playwright install-deps chromium
+
     - name: Install Playwright browser (Chromium)
+      # Only runs if the browsers aren't found in the cache step above
       if: steps.playwright-cache.outputs.cache-hit != 'true'
       run: npx playwright install chromium
-
-    - name: Install system dependencies
-      if: steps.playwright-cache.outputs.cache-hit != 'true'
-      run: npx playwright install-deps chromium
 
     - name: Run Playwright tests
       run: npx playwright test --project=chromium
@@ -45,4 +54,3 @@ jobs:
         name: playwright-report
         path: playwright-report/
         retention-days: 30
-
