@@ -7,47 +7,23 @@ on:
 jobs:
   test:
     timeout-minutes: 30
-    runs-on: ubuntu-22.04
+    runs-on: [self-hosted, windows]
     steps:
     - uses: actions/checkout@v4
 
     - uses: actions/setup-node@v4
       with:
-        # Node 22 works perfectly with Playwright 1.60.0+
         node-version: 22
         cache: 'npm'
-
-    - name: Free Disk Space
-      # Clears temporary runner data to ensure smooth unzipping
-      run: |
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /usr/local/lib/android
-        sudo rm -rf /opt/ghc
-        sudo rm -rf "/usr/local/share/boost"
-        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
 
     - name: Install dependencies
       run: npm ci
 
-    - name: Cache Playwright browsers
-      uses: actions/cache@v4
-      id: playwright-cache
-      with:
-        path: ~/.cache/ms-playwright
-        key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
-
-    - name: Install system dependencies
-      # CRITICAL: Always run this. Ubuntu needs these libraries even on a cache hit.
-      run: npx playwright install-deps chromium
-
-    - name: Install Playwright browser (Chromium)
-      # Only runs if the browsers aren't found in the cache step above
-      if: steps.playwright-cache.outputs.cache-hit != 'true'
+    - name: Install Playwright browsers
       run: npx playwright install chromium
 
     - name: Run Playwright tests
       env:
-        # Injected from GitHub Secrets → Settings → Secrets and variables → Actions
         AMAZON_EMAIL: ${{ secrets.AMAZON_EMAIL }}
         AMAZON_PASSWORD: ${{ secrets.AMAZON_PASSWORD }}
       run: npx playwright test --project=chromium
