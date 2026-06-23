@@ -2,8 +2,8 @@ const { test, expect } = require('@playwright/test');
 
 /**
  * Test: Intercept AppSync GraphQL API calls made by the browser.
- * ✅ No API keys needed — Amazon handles authentication automatically.
- * ✅ Works with both Fetch and XHR requests.
+ * No API keys needed — Amazon handles authentication automatically.
+ * Works with both Fetch and XHR requests.
  */
 test('API: verify getAllBroadcastData from live broadcast page', async ({ page }) => {
     // Step 1: Start waiting for the GraphQL API response BEFORE navigating
@@ -28,16 +28,16 @@ test('API: verify getAllBroadcastData from live broadcast page', async ({ page }
 
   const broadcast = json.data.getAllBroadcastData?.broadcast;
 
-  // Step 5: Handle case when no broadcast is live (graceful skip, not failure)
-  test.skip(!broadcast, '⏭️ No live broadcast active at this time — skipping assertions');
+    // Step 5: Handle case when no broadcast is live (graceful skip, not failure)
+    test.skip(!broadcast, 'No live broadcast active at this time — skipping assertions');
 
   // Step 6: Flexible assertions — validate data types, not exact values
   expect(broadcast.liveViewers).toEqual(expect.any(Number));
   expect(broadcast.status).toEqual(expect.any(String));
   expect(broadcast.title).toEqual(expect.any(String));
 
-  // Step 7: Log the live data for debugging
-  console.log('✅ Live Broadcast Data:', {
+    // Step 7: Log the live data for debugging
+    console.log('Live Broadcast Data:', {
     liveViewers: broadcast.liveViewers,
     status: broadcast.status,
     title: broadcast.title,
