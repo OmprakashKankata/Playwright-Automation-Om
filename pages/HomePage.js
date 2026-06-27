@@ -6,6 +6,8 @@ exports.HomePage = class HomePage {
     this.signInLink = page.locator('//*[@id="nav-link-accountList"]/a');
     this.giftCardsLink = page.locator('//a[normalize-space(.)="Gift Cards"]');
     this.freshMenu = page.locator('//*[@id="nav-link-groceries"]/a/span');
+    this.amazonLogo = page.locator("//a[contains(@id, 'nav-logo-sprites')]");
+    this.searchAmazonInput = page.locator('//input[contains(@id, "twotabsearchtextbox")]');
   }
 
   async navigate() {
@@ -41,6 +43,17 @@ exports.HomePage = class HomePage {
   async hoverOnFreshMenu() {
     await this.freshMenu.hover();
     console.log('Hovered on Fresh menu');
+  }
+
+  async clickAmazonLogo() {
+    await this.amazonLogo.click();
+    await this.page.waitForLoadState('domcontentloaded', { timeout: 15000 });
+  }
+
+  async enterSearchTerm(term) {
+    await this.searchAmazonInput.fill(term);
+    await this.searchAmazonInput.press('Enter');
+    await this.page.waitForLoadState('domcontentloaded', { timeout: 15000 });
   }
 };
 

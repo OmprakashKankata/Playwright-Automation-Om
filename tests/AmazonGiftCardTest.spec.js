@@ -20,8 +20,6 @@ test('Amazon: Sign in → Gift Cards → Wallet Balance', async ({ page }) => {
   // Step 1: Navigate to Amazon
   await homePage.navigate();
   await homePage.verifyTitle();
-  
-
 
   // Step 2: Login
   await homePage.clickSignIn();
@@ -33,9 +31,17 @@ test('Amazon: Sign in → Gift Cards → Wallet Balance', async ({ page }) => {
   await giftCardPage.clickAddGiftCard();
   await giftCardPage.verifyWalletBalance();
 
-  // Now click on fresh menu and verify that the hover action was successful
+  // Step 4: Go back to homepage before interacting with homepage elements
+  await homePage.clickAmazonLogo();
+  console.log('Back to homepage');
+
+  // Step 5: Hover on Fresh menu
   await homePage.hoverOnFreshMenu();
-  console.log('Hovered on Fresh menu successfully');
-  
+
+  // Step 6: Search for laptops and verify results
+  await homePage.enterSearchTerm('Laptops');
+  await homePage.verifySearchResults('Laptops');
+  console.log('Search results verified for "Laptops"');
+
   console.log('Test completed successfully!');
 });
