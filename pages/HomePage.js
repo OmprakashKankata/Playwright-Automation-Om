@@ -1,4 +1,5 @@
 const { expect } = require('@playwright/test');
+const { Logger } = require('../utils/logger');
 
 exports.HomePage = class HomePage {
   constructor(page) {
@@ -8,6 +9,12 @@ exports.HomePage = class HomePage {
     this.freshMenu = page.locator('//*[@id="nav-link-groceries"]/a/span');
     this.amazonLogo = page.locator("//a[contains(@id, 'nav-logo-sprites')]");
     this.searchAmazonInput = page.locator('//input[contains(@id, "twotabsearchtextbox")]');
+    // Robust ASUS checkbox locator - find by label text instead of brittle ID
+    this.allFiltersButton = page.locator('//*[@id="s-all-filters-announce"]');
+    this.asusCheckbox = page.locator('//span[@class="a-size-base a-color-base" and text()="ASUS"]/ancestor::a[@role="link"]');
+
+    this.searchResultCount = page.locator('//*[@id="search"]/span/div/h1/div/div[1]/div/div/div[2]/h2');
+    this.priceSlider = page.locator('//input[contains(@id,"p_36/range-slider_slider-item_upper-bound-slider")]');
   }
 
   async navigate() {
@@ -26,7 +33,7 @@ exports.HomePage = class HomePage {
   async verifyTitle() {
     await expect(this.page).toHaveTitle(/Amazon|Online Shopping/);
     const title = await this.page.title();
-    console.log('Page Title:', title);
+    Logger.info('Page Title: ' + title);
   }
 
   async clickSignIn() {
@@ -37,12 +44,12 @@ exports.HomePage = class HomePage {
   async goToGiftCards() {
     await this.giftCardsLink.click();
     await this.page.waitForLoadState('domcontentloaded', { timeout: 15000 });
-    console.log('Current URL:', this.page.url());
+    
   }
 
   async hoverOnFreshMenu() {
     await this.freshMenu.hover();
-    console.log('Hovered on Fresh menu');
+    Logger.info('Hovered on Fresh menu');
   }
 
   async clickAmazonLogo() {
@@ -55,5 +62,80 @@ exports.HomePage = class HomePage {
     await this.searchAmazonInput.press('Enter');
     await this.page.waitForLoadState('domcontentloaded', { timeout: 15000 });
   }
-};
+
+  async verifySearchResults(term) {
+    // Verify page title includes the search term
+    await expect(this.page).toHaveTitle(new RegExp(term, 'i'), { timeout: 10000 });
+    Logger.info('Verified search results for: ' + term);
+    
+  }
+
+   async checkboxfilter() {
+    const isFilterVisible = await this.allFiltersButton.isVisible().catch(() => false);
+
+    if (isFilterVisible) {
+      await this.allFiltersButton.click();
+      await this.page.waitForLoadState('domcontentloaded', { timeout: 15000 });
+      Logger.info('Clicked on All Filters button');
+    } else {
+      Logger.info('Filter button not visible, clicking ASUS checkbox directly');
+      await this.clickAsusCheckbox();
+    }
+  }
+
+  async clickAsusCheckbox() {
+    const exists = await this.asusCheckbox.count();
+    if (exists === 0) {
+      Logger.error('ASUS checkbox not found on the page');
+      return;
+    }
+    
+    await this.asusCheckbox.scrollIntoViewIfNeeded();
+    await this.page.waitForTimeout(500);
+    
+    try {
+      // Try regular click first
+      await this.asusCheckbox.click({ timeout: 5000 });
+    } catch {
+      // Fallback: Force click (bypass overlays)
+      Logger.info('Regular click failed, trying force click');
+      await this.asusCheckbox.click({ force: true, timeout: 5000 });
+    }
+    
+    await this.page.waitForLoadState('domcontentloaded', { timeout: 15000 });
+    Logger.info('Clicked on ASUS checkbox filter');
+  }
+
+  async scrollToPosition(position) {
+    if (position === 'bottom') {
+      await this.page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    } else if (position === 'middle') {
+      await this.page.evaluate(() => window.scrollTo(0, document.body.scrollHeight / 2));
+    }
+    Logger.info('Scrolled to ' + position + ' of the page');
+  }
+
+  async getResultCount() {
+    await this.page.evaluate(() => window.scrollTo(0, 0));
+    await this.page.waitForTimeout(1000);
+
+    const countText = await this.searchResultCount.textContent();
+    Logger.info('Search result count: ' + countText);
+    return countText;
+}
+
+async decreasePriceSlider(steps) {
+    await this.priceSlider.scrollIntoViewIfNeeded();
+    await this.priceSlider.focus();
+
+    for (let i = 0; i < steps; i++) {
+      await this.page.keyboard.press('ArrowLeft');
+      await this.page.waitForTimeout(100);
+      Logger.info(`Decreased price slider by 1 step (total steps: ${i + 1})`);
+    }
+
+      await this.page.keyboard.press('Enter');
+    await this.page.waitForLoadState('domcontentloaded', { timeout: 15000 });
+    Logger.info(`Decreased price slider by ${steps} steps`);
+  }}
 

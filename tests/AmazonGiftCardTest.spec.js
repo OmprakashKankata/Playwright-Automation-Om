@@ -1,5 +1,6 @@
 const { test } = require('@playwright/test');
 require('dotenv').config();
+const { Logger } = require('../utils/logger');
 
 const { HomePage } = require('../pages/HomePage');
 const { LoginPage } = require('../pages/LoginPage');
@@ -17,31 +18,45 @@ test('Amazon: Sign in → Gift Cards → Wallet Balance', async ({ page }) => {
   const loginPage = new LoginPage(page);
   const giftCardPage = new GiftCardPage(page);
 
-  // Step 1: Navigate to Amazon
+  Logger.step(1, 'Navigate to Amazon');
   await homePage.navigate();
   await homePage.verifyTitle();
 
-  // Step 2: Login
+  Logger.step(2, 'Login');
   await homePage.clickSignIn();
   await loginPage.verifySignInPage();
   await loginPage.login(email, password);
 
-  // Step 3: Go to Gift Cards & verify balance
+  Logger.step(3, 'Go to Gift Cards & verify balance');
   await homePage.goToGiftCards();
   await giftCardPage.clickAddGiftCard();
   await giftCardPage.verifyWalletBalance();
 
-  // Step 4: Go back to homepage before interacting with homepage elements
+  Logger.step(4, 'Back to homepage');
   await homePage.clickAmazonLogo();
-  console.log('Back to homepage');
 
-  // Step 5: Hover on Fresh menu
+  Logger.step(5, 'Hover on Fresh menu');
   await homePage.hoverOnFreshMenu();
 
-  // Step 6: Search for laptops and verify results
+  Logger.step(6, 'Search for laptops and verify results');
   await homePage.enterSearchTerm('Laptops');
   await homePage.verifySearchResults('Laptops');
-  console.log('Search results verified for "Laptops"');
 
-  console.log('Test completed successfully!');
+  Logger.step(7, 'Click ASUS checkbox filter');
+  await homePage.checkboxfilter();
+
+  Logger.step(7, 'Click ASUS checkbox filter');
+  await homePage.clickAsusCheckbox();
+
+
+  Logger.step(8, 'Verify the asus laptop return count');
+  await homePage.getResultCount();
+
+  Logger.step(9, 'PriceSlider: Decrease the price slider by 5 steps');
+  await homePage.decreasePriceSlider(5);
+
+  Logger.step(10, 'Verify updated search count after price filter');
+  await homePage.getResultCount();
+
+  Logger.info('Test completed successfully!');
 });

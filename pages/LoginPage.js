@@ -1,4 +1,5 @@
 const { expect } = require('@playwright/test');
+const { Logger } = require('../utils/logger');
 
 exports.LoginPage = class LoginPage {
   constructor(page) {
@@ -13,7 +14,7 @@ exports.LoginPage = class LoginPage {
   async verifySignInPage() {
     await expect(this.signInHeader).toContainText(/Sign in/);
     const headerText = await this.signInHeader.textContent();
-    console.log('Sign In Header:', headerText);
+    Logger.info('Sign In Header: ' + headerText);
   }
 
   async login(email, password) {
@@ -21,6 +22,6 @@ exports.LoginPage = class LoginPage {
     await this.continueButton.click();
     await this.passwordInput.fill(password, { timeout: 10000 });
     await this.signInButton.click();
-    console.log('Login completed');
+    Logger.info('Login completed');
   }
 };

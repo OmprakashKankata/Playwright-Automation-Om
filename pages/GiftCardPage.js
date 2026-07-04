@@ -1,4 +1,5 @@
 const { expect } = require('@playwright/test');
+const { Logger } = require('../utils/logger');
 
 exports.GiftCardPage = class GiftCardPage {
   constructor(page) {
@@ -14,6 +15,6 @@ exports.GiftCardPage = class GiftCardPage {
   async verifyWalletBalance(expectedBalance = '₹5.00') {
     await expect(this.walletBalance).toHaveText(expectedBalance);
     const balanceText = await this.walletBalance.textContent();
-    console.log('Wallet Balance:', balanceText);
+    Logger.info('Wallet Balance: ' + balanceText);
   }
 };
