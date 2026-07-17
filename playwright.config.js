@@ -14,11 +14,13 @@ module.exports = defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  reporter: [['html', { open: 'on-failure' }], ['list']],
   use: {
     baseURL: 'https://www.amazon.in',
-    trace: 'on-first-retry',
+    actionTimeout: 15000,
+    trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
     // Real user agent to avoid basic bot detection
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   },
@@ -28,8 +30,11 @@ module.exports = defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
+        viewport: null,
+        deviceScaleFactor: undefined,
         launchOptions: {
           args: [
+            '--start-maximized',
             '--disable-blink-features=AutomationControlled',  // Hides automation flags
             '--no-sandbox',
             '--disable-infobars',
