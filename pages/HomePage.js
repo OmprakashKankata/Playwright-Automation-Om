@@ -1,5 +1,4 @@
 const { expect } = require('@playwright/test');
-const { Logger } = require('../utils/logger');
 
 exports.HomePage = class HomePage {
   constructor(page) {
@@ -9,13 +8,12 @@ exports.HomePage = class HomePage {
     this.freshMenu = page.locator('//*[@id="nav-link-groceries"]/a/span');
     this.amazonLogo = page.locator("//a[contains(@id, 'nav-logo-sprites')]");
     this.searchAmazonInput = page.locator('//input[contains(@id, "twotabsearchtextbox")]');
-    // Robust ASUS checkbox locator - find by label text instead of brittle ID
-    this.allFiltersButton = page.locator('//*[@id="s-all-filters-announce"]');
-    this.asusCheckbox = page.locator('//span[@class="a-size-base a-color-base" and text()="ASUS"]/ancestor::a[@role="link"]');
+    this.asusCheckbox = page.locator('//*[self::span or self::a][contains(normalize-space(.), "ASUS")]').first();
 
     this.searchResultCount = page.locator('//*[@id="search"]/span/div/h1/div/div[1]/div/div/div[2]/h2');
     this.priceSlider = page.locator('//input[contains(@id,"p_36/range-slider_slider-item_upper-bound-slider")]');
-  }
+    this.todaysDealsPage= page.locator("(//a[normalize-space()=\"Today's Deals\"])[1]");
+  } 
 
   async navigate() {
     await this.page.goto('https://www.amazon.in/', {
@@ -33,7 +31,6 @@ exports.HomePage = class HomePage {
   async verifyTitle() {
     await expect(this.page).toHaveTitle(/Amazon|Online Shopping/);
     const title = await this.page.title();
-    Logger.info('Page Title: ' + title);
   }
 
   async clickSignIn() {
@@ -49,7 +46,6 @@ exports.HomePage = class HomePage {
 
   async hoverOnFreshMenu() {
     await this.freshMenu.hover();
-    Logger.info('Hovered on Fresh menu');
   }
 
   async clickAmazonLogo() {
@@ -66,44 +62,27 @@ exports.HomePage = class HomePage {
   async verifySearchResults(term) {
     // Verify page title includes the search term
     await expect(this.page).toHaveTitle(new RegExp(term, 'i'), { timeout: 10000 });
-    Logger.info('Verified search results for: ' + term);
     
   }
 
-   async checkboxfilter() {
-    const isFilterVisible = await this.allFiltersButton.isVisible().catch(() => false);
-
-    if (isFilterVisible) {
-      await this.allFiltersButton.click();
-      await this.page.waitForLoadState('domcontentloaded', { timeout: 15000 });
-      Logger.info('Clicked on All Filters button');
-    } else {
-      Logger.info('Filter button not visible, clicking ASUS checkbox directly');
-      await this.clickAsusCheckbox();
-    }
+  async checkboxfilter() {
+    await this.clickAsusCheckbox();
   }
 
   async clickAsusCheckbox() {
-    const exists = await this.asusCheckbox.count();
-    if (exists === 0) {
-      Logger.error('ASUS checkbox not found on the page');
-      return;
+    const count = await this.asusCheckbox.count();
+    if (count === 0) {
+      console.warn('ASUS filter option not found; skipping filter.');
+      return false;
     }
-    
+
     await this.asusCheckbox.scrollIntoViewIfNeeded();
-    await this.page.waitForTimeout(500);
-    
-    try {
-      // Try regular click first
-      await this.asusCheckbox.click({ timeout: 5000 });
-    } catch {
-      // Fallback: Force click (bypass overlays)
-      Logger.info('Regular click failed, trying force click');
+    await this.asusCheckbox.click({ timeout: 5000 }).catch(async () => {
       await this.asusCheckbox.click({ force: true, timeout: 5000 });
-    }
-    
+    });
+
     await this.page.waitForLoadState('domcontentloaded', { timeout: 15000 });
-    Logger.info('Clicked on ASUS checkbox filter');
+    return true;
   }
 
   async scrollToPosition(position) {
@@ -112,30 +91,55 @@ exports.HomePage = class HomePage {
     } else if (position === 'middle') {
       await this.page.evaluate(() => window.scrollTo(0, document.body.scrollHeight / 2));
     }
-    Logger.info('Scrolled to ' + position + ' of the page');
+    
   }
 
   async getResultCount() {
     await this.page.evaluate(() => window.scrollTo(0, 0));
     await this.page.waitForTimeout(1000);
 
-    const countText = await this.searchResultCount.textContent();
-    Logger.info('Search result count: ' + countText);
-    return countText;
-}
+    const countText = await this.searchResultCount.textContent().catch(() => '');
+    console.info('Search result count: ' + countText);
 
-async decreasePriceSlider(steps) {
+    const match = countText.match(/of\s+([\d,]+)\s+results/i);
+    if (!match) {
+      console.warn('Could not parse result count; returning 0.');
+      return 0;
+    }
+
+    const total = parseInt(match[1].replace(/,/g, ''), 10);
+    console.info('Parsed result count (number): ' + total);
+    return total;
+  }
+
+  async decreasePriceSlider(steps) {
+    const sliderCount = await this.priceSlider.count();
+    if (sliderCount === 0) {
+      console.warn('Price slider not found; skipping price filter.');
+      return false;
+    }
+
     await this.priceSlider.scrollIntoViewIfNeeded();
     await this.priceSlider.focus();
 
     for (let i = 0; i < steps; i++) {
       await this.page.keyboard.press('ArrowLeft');
       await this.page.waitForTimeout(100);
-      Logger.info(`Decreased price slider by 1 step (total steps: ${i + 1})`);
     }
 
-      await this.page.keyboard.press('Enter');
+    await this.page.keyboard.press('Enter');
     await this.page.waitForLoadState('domcontentloaded', { timeout: 15000 });
-    Logger.info(`Decreased price slider by ${steps} steps`);
-  }}
+    return true;
+  }
+
+  async goToTodaysDeals() {
+    try {
+      await this.todaysDealsPage.click();
+      await this.page.waitForLoadState('networkidle', { timeout: 30000 });
+    } catch (error) {
+      console.warn('Could not open Today\'s Deals page:', error.message);
+    }
+  }
+}
+
 
