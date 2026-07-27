@@ -37,4 +37,4 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run smoke test only
-        run: npx playwright test tests/smoke/login-smoke.spec.js --project=chromium --grep "@smoke"
+        run: npx playwright test tests/smoke/login-smoke.spec.js --project=chromium --grep "@smoke" --retries=0
