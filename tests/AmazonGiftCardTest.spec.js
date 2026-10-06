@@ -25,7 +25,6 @@ test('Amazon: Sign in → Gift Cards → Wallet Balance', async ({ page }) => {
   await test.step('Verify Gift Card wallet balance', async () => {
     await homePage.goToGiftCards();
     await giftCardPage.clickAddGiftCard();
-    await giftCardPage.verifyWalletBalance();
     const walletBalance = await giftCardPage.verifyWalletBalance();
     console.log(`Current Wallet Balance: ${walletBalance}`);
 
